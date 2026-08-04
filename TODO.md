@@ -20,12 +20,12 @@ in git.
 
 ## Phase 0 — the bridge (CPU, unblocked)
 
-- [ ] Pin the exact SPINDLE and NPN test numbers (supertagging accuracy, proof/term accuracy)
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 14:30 Pin the exact SPINDLE and NPN test numbers (supertagging accuracy, proof/term accuracy)
   with table citations in `experiments/BASELINES.md`
-- [ ] `experiments/bridge.py`: convert `aethel.mill` types and terms to
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 14:30 `experiments/bridge.py`: convert `aethel.mill` types and terms to
   `discopy.grammar.abstract` (discopy#400 — install from its branch until it lands; when
   updating it from `main`, its `closed.py` hunks resolve toward the merged #442)
-- [ ] Round-trip: convert and type-check all 68,763 proofs, report coverage and file the residue
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 14:30 Round-trip: convert and type-check all 68,763 proofs, report coverage and file the residue
   as issues
 
 ## Phase 1 — supertagging
