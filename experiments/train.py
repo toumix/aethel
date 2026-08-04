@@ -117,6 +117,8 @@ def main() -> None:
     parser.add_argument("--head-lr", type=float, default=1e-3)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--warmup", type=float, default=0.)
+    parser.add_argument("--label-smoothing", type=float, default=0.)
     parser.add_argument("--test", action="store_true")
     args = parser.parse_args()
 
@@ -135,12 +137,20 @@ def main() -> None:
             train_counts[prefix] += size
     vocab = Vocabulary(json.loads((data_dir / "symbols.json").read_text()))
     tokenizer = AutoTokenizer.from_pretrained(args.encoder)
-    model = Tagger(AutoModel.from_pretrained(args.encoder), vocab).to(device)
+    model = Tagger(
+        AutoModel.from_pretrained(args.encoder), vocab,
+        label_smoothing=args.label_smoothing).to(device)
     optimizer = torch.optim.AdamW([
         {"params": model.encoder.parameters(), "lr": args.encoder_lr},
         {"params": [
             parameter for name, parameter in model.named_parameters()
             if not name.startswith("encoder.")], "lr": args.head_lr}])
+    total = args.epochs * len(batches(subsets["train"], args.batch_size))
+    warmup = int(args.warmup * total)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, (lambda step: min(
+            step / warmup, (total - step) / max(total - warmup, 1)))
+        if warmup else (lambda step: 1.))
 
     best, log = 0., out_dir / "metrics.jsonl"
     for epoch in range(args.epochs):
@@ -152,6 +162,7 @@ def main() -> None:
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
             optimizer.step()
+            scheduler.step()
             total_loss, n = total_loss + loss.item(), n + 1
         metrics = evaluate(
             model, subsets["dev"], tokenizer, vocab, train_counts, device,

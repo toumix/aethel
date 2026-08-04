@@ -13,6 +13,10 @@ on:
         default: '32'
       run_name:
         default: 'run'
+      warmup:
+        default: '0'
+      label_smoothing:
+        default: '0'
       gpu:
         default: 'A100-40GB'
       smoke:
@@ -44,5 +48,7 @@ jobs:
           --encoder ${{ inputs.encoder }}
           --batch-size ${{ inputs.batch_size }}
           --run-name ${{ inputs.run_name }}
+          --warmup ${{ inputs.warmup }}
+          --label-smoothing ${{ inputs.label_smoothing }}
           ${{ inputs.smoke && '--smoke' || '' }}
           ${{ inputs.test && '--test' || '' }}

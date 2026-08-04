@@ -65,11 +65,13 @@ def train(arguments: list[str]) -> str:
 @app.local_entrypoint()
 def main(epochs: int = 5, encoder: str = "DTAI-KULeuven/robbert-2023-dutch-base",
          batch_size: int = 32, run_name: str = "run", limit: int = 0,
+         warmup: float = 0., label_smoothing: float = 0.,
          test: bool = False, smoke: bool = False, force_data: bool = False):
     prepare.remote(force=force_data)
     arguments = [
         "--out", f"/vol/runs/{run_name}", "--encoder", encoder,
-        "--epochs", str(epochs), "--batch-size", str(batch_size)]
+        "--epochs", str(epochs), "--batch-size", str(batch_size),
+        "--warmup", str(warmup), "--label-smoothing", str(label_smoothing)]
     if smoke:
         arguments += ["--limit", "200", "--epochs", "1"]
     elif limit:

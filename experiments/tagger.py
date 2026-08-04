@@ -55,9 +55,11 @@ class Tagger(nn.Module):
         embedding_dim : The dimension of the symbol embeddings.
     """
 
-    def __init__(self, encoder, vocab: Vocabulary, embedding_dim: int = 256):
+    def __init__(self, encoder, vocab: Vocabulary, embedding_dim: int = 256,
+                 label_smoothing: float = 0.):
         super().__init__()
         self.encoder, self.vocab = encoder, vocab
+        self.label_smoothing = label_smoothing
         hidden = encoder.config.hidden_size
         self.embedding = nn.Embedding(
             len(vocab), embedding_dim, padding_idx=vocab.pad)
@@ -104,7 +106,8 @@ class Tagger(nn.Module):
         logits = self.output(outputs)
         return nn.functional.cross_entropy(
             logits.flatten(0, 1), targets.flatten(),
-            ignore_index=self.vocab.pad)
+            ignore_index=self.vocab.pad,
+            label_smoothing=self.label_smoothing)
 
     @torch.no_grad()
     def greedy(self, input_ids, attention_mask, phrase_ids, n_phrases: int,
