@@ -24,11 +24,12 @@ in git.
 - [x] Pin the exact SPINDLE and NPN test numbers (supertagging accuracy, proof/term accuracy)
   with table citations in `experiments/BASELINES.md` — done, cross-verified against the
   authors' LaTeX sources; the numbers to beat are 94.08 (tagging) and 55.63 (proofs)
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 14:30 `experiments/bridge.py`: convert `aethel.mill` types and terms to
+- [x] `experiments/bridge.py`: convert `aethel.mill` types and terms to
   `discopy.grammar.abstract` (discopy#400 — install from its branch until it lands; when
   updating it from `main`, its `closed.py` hunks resolve toward the merged #442)
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 14:30 Round-trip: convert and type-check all 68,763 proofs, report coverage and file the residue
-  as issues
+- [x] Round-trip: convert and type-check all 68,763 proofs — **68,763/68,763 round-trip
+  exactly (100.0000%), zero failures, nothing to file** (`experiments/roundtrip.py`,
+  discopy at #400's head `25c8493`, Python 3.12)
 
 ## Phase 1 — supertagging
 
