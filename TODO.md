@@ -33,15 +33,19 @@ in git.
 
 ## Phase 1 — supertagging
 
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 Data module respecting the official split, with long-tail and unseen-type statistics on
-  dev and test
+- [x] Data module respecting the official split (`experiments/data.py`) — word-level test
+  total reproduces the published 95,331 exactly; bins within 0.2% of the thesis table,
+  whose thresholds no primary source states; types are per lexical phrase, counted per word
 - [ ] Reproduce the SPINDLE tagger evaluation on our split to establish parity
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 Constructive type decoder over a Dutch pretrained encoder (RobBERT-2023 or XLM-R large):
-  decode each type as a tree of connectives, never a 5,762-way softmax
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume,
-  launched by a GitHub Actions workflow — `modal-check.yml` is the seed, verified green with
-  the repository secrets on 2026-08-04 (run 30917331003)
-- [ ] Sweep on dev, report test accuracy against the 94.08 bar
+- [x] Constructive type decoder (`experiments/tagger.py`): RobBERT-2023 encoder mean-pooled
+  per phrase, GRU head decoding prefix notation under arity constraints so every prediction
+  parses as a well-formed type; CPU smoke test in `experiments/test_tagger.py`
+- [x] `experiments/modal_app.py`: GPU training on Modal with checkpoints on the
+  `aethel-tagging` volume, launched by the `train` workflow — smoke run green end to end
+  (run 30921567607: data prep on volume, RobBERT download, train, constrained dev eval)
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:50 Sweep on dev, report test
+  accuracy against the 94.08 bar — first full run `base-1` dispatched
+  (RobBERT-base, 5 epochs, A100, run 30922220062)
 
 ## Phase 2 — full proofs
 
