@@ -33,12 +33,12 @@ in git.
 
 ## Phase 1 — supertagging
 
-- [ ] Data module respecting the official split, with long-tail and unseen-type statistics on
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 Data module respecting the official split, with long-tail and unseen-type statistics on
   dev and test
 - [ ] Reproduce the SPINDLE tagger evaluation on our split to establish parity
-- [ ] Constructive type decoder over a Dutch pretrained encoder (RobBERT-2023 or XLM-R large):
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 Constructive type decoder over a Dutch pretrained encoder (RobBERT-2023 or XLM-R large):
   decode each type as a tree of connectives, never a 5,762-way softmax
-- [ ] `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume,
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:20 `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume,
   launched by a GitHub Actions workflow — `modal-check.yml` is the seed, verified green with
   the repository secrets on 2026-08-04 (run 30917331003)
 - [ ] Sweep on dev, report test accuracy against the 94.08 bar
