@@ -36,8 +36,8 @@ in git.
 - [ ] Constructive type decoder over a Dutch pretrained encoder (RobBERT-2023 or XLM-R large):
   decode each type as a tree of connectives, never a 5,762-way softmax
 - [ ] `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume,
-  launched by a GitHub Actions workflow (`modal-check.yml` is the seed) — **blocked on USER
-  adding the repository secrets and enabling Actions on this fork**
+  launched by a GitHub Actions workflow — `modal-check.yml` is the seed, verified green with
+  the repository secrets on 2026-08-04 (run 30917331003)
 - [ ] Sweep on dev, report test accuracy against SPINDLE
 
 ## Phase 2 — full proofs
