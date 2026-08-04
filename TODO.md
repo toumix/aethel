@@ -50,7 +50,10 @@ in git.
   flatlined from epoch 1, the classic large-encoder instability; warmup + linear decay,
   label smoothing and an `encoder_lr` knob added in response. `base-2` (base, 15 epochs,
   warmup 0.1, ls 0.1) jumps to **93.05 dev** (frame 58.71, rare 52.66, unseen 13.97) —
-  1.03 from the bar; `large-2` (same recipe, large, 1e-5) in flight
+  1.03 from the bar. `large-2` (large, 1e-5, warmup 0.1, ls 0.1, 15 epochs) reaches
+  **93.73 dev** (frame 61.08, uncommon 73.35, rare 55.14, unseen 16.19), 0.35 from the
+  bar and still climbing at the last epoch; `large-3`/`large-4` (25 epochs, 2e-5 vs 1e-5)
+  in flight; decoder attention over sentence context is the next structural lever
 
 ## Phase 2 — full proofs
 
