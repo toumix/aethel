@@ -46,7 +46,10 @@ in git.
 - [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:50 Sweep on dev, report test
   accuracy against the 94.08 bar — `base-1` (RobBERT-base, 5 epochs, 12 GPU-min,
   run 30922220062) reaches **91.58 dev** (frame 50.46, unseen 5.40), not converged;
-  `large-1` (RobBERT-large, 15 epochs) dispatched next
+  `large-1` (RobBERT-large, 15 epochs, constant 5e-5, no warmup) **collapsed** — 12.19 dev
+  flatlined from epoch 1, the classic large-encoder instability; warmup + linear decay,
+  label smoothing and an `encoder_lr` knob added in response, `base-2`/`large-2`
+  dispatched with the schedule
 
 ## Phase 2 — full proofs
 

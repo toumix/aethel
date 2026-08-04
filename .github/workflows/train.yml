@@ -17,6 +17,8 @@ on:
         default: '0'
       label_smoothing:
         default: '0'
+      encoder_lr:
+        default: '5e-5'
       gpu:
         default: 'A100-40GB'
       smoke:
@@ -50,5 +52,6 @@ jobs:
           --run-name ${{ inputs.run_name }}
           --warmup ${{ inputs.warmup }}
           --label-smoothing ${{ inputs.label_smoothing }}
+          --encoder-lr ${{ inputs.encoder_lr }}
           ${{ inputs.smoke && '--smoke' || '' }}
           ${{ inputs.test && '--test' || '' }}
