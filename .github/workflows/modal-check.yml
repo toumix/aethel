@@ -1,0 +1,20 @@
+name: modal-check
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/acg-aethel-scaling-c1kdob]
+    paths: ['.github/workflows/modal-check.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install modal
+      - name: Verify Modal credentials
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: modal app list

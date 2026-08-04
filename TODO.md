@@ -12,8 +12,11 @@ experiment lives in this repo; training runs on Modal (credentials given live, k
 Measurements (2026-08-04): `data/aethel_1.0.0a5.zip` loads under Python 3.11 — 68,763 samples
 (56,875 train / 6,118 dev / 5,770 test), 992,385 tokens, 5,762 distinct types. Baselines to beat:
 Neural Proof Nets (CoNLL 2020) ≈70% proof/term accuracy; SPINDLE (EACL 2023), graph-attention
-supertagger plus Sinkhorn linking, is the current SOTA. `api.modal.com` is 403-blocked by the
-session environment's network policy; only USER can allow it.
+supertagger plus Sinkhorn linking, is the current SOTA. USER opened the network policy for
+`api.modal.com` (plain HTTPS now passes) but the session proxy does not carry gRPC, which the
+Modal client requires — so all Modal runs are driven from GitHub Actions, with
+`MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` as repository secrets, never from a session and never
+in git.
 
 ## Phase 0 — the bridge (CPU, unblocked)
 
@@ -32,8 +35,9 @@ session environment's network policy; only USER can allow it.
 - [ ] Reproduce the SPINDLE tagger evaluation on our split to establish parity
 - [ ] Constructive type decoder over a Dutch pretrained encoder (RobBERT-2023 or XLM-R large):
   decode each type as a tree of connectives, never a 5,762-way softmax
-- [ ] `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume —
-  **blocked on the network policy above**
+- [ ] `experiments/modal_app.py`: GPU training on Modal with checkpoints on a Modal volume,
+  launched by a GitHub Actions workflow (`modal-check.yml` is the seed) — **blocked on USER
+  adding the repository secrets and enabling Actions on this fork**
 - [ ] Sweep on dev, report test accuracy against SPINDLE
 
 ## Phase 2 — full proofs
