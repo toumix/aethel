@@ -44,8 +44,9 @@ in git.
   `aethel-tagging` volume, launched by the `train` workflow — smoke run green end to end
   (run 30921567607: data prep on volume, RobBERT download, train, constrained dev eval)
 - [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:50 Sweep on dev, report test
-  accuracy against the 94.08 bar — first full run `base-1` dispatched
-  (RobBERT-base, 5 epochs, A100, run 30922220062)
+  accuracy against the 94.08 bar — `base-1` (RobBERT-base, 5 epochs, 12 GPU-min,
+  run 30922220062) reaches **91.58 dev** (frame 50.46, unseen 5.40), not converged;
+  `large-1` (RobBERT-large, 15 epochs) dispatched next
 
 ## Phase 2 — full proofs
 
