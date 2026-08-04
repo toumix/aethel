@@ -1,0 +1,44 @@
+name: train
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        default: '5'
+      encoder:
+        default: 'DTAI-KULeuven/robbert-2023-dutch-base'
+      batch_size:
+        default: '32'
+      run_name:
+        default: 'run'
+      gpu:
+        default: 'A100-40GB'
+      smoke:
+        type: boolean
+        default: false
+      test:
+        type: boolean
+        default: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install modal
+      - name: Train on Modal
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_GPU: ${{ inputs.gpu }}
+        run: >
+          modal run experiments/modal_app.py
+          --epochs ${{ inputs.epochs }}
+          --encoder ${{ inputs.encoder }}
+          --batch-size ${{ inputs.batch_size }}
+          --run-name ${{ inputs.run_name }}
+          ${{ inputs.smoke && '--smoke' || '' }}
+          ${{ inputs.test && '--test' || '' }}
