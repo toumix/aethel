@@ -48,8 +48,9 @@ in git.
   run 30922220062) reaches **91.58 dev** (frame 50.46, unseen 5.40), not converged;
   `large-1` (RobBERT-large, 15 epochs, constant 5e-5, no warmup) **collapsed** — 12.19 dev
   flatlined from epoch 1, the classic large-encoder instability; warmup + linear decay,
-  label smoothing and an `encoder_lr` knob added in response, `base-2`/`large-2`
-  dispatched with the schedule
+  label smoothing and an `encoder_lr` knob added in response. `base-2` (base, 15 epochs,
+  warmup 0.1, ls 0.1) jumps to **93.05 dev** (frame 58.71, rare 52.66, unseen 13.97) —
+  1.03 from the bar; `large-2` (same recipe, large, 1e-5) in flight
 
 ## Phase 2 — full proofs
 
