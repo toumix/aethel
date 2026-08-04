@@ -1,5 +1,8 @@
 name: train
 on:
+  push:
+    branches: [claude/acg-aethel-scaling-c1kdob]
+    paths: ['.github/workflows/train.yml']
   workflow_dispatch:
     inputs:
       epochs:
@@ -21,6 +24,7 @@ on:
 
 jobs:
   train:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 355
     steps:
