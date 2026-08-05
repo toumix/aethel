@@ -55,8 +55,9 @@ in git.
   bar and still climbing at the last epoch; `large-3`/`large-4` (25 epochs, 2e-5 vs
   1e-5) both plateau at **93.90 dev** — LR indifferent, pure training flattened, but rare
   59.11 and unseen 20.32 now beat the published tagger's bins (58.15 / 18.37). `large-5`
-  adds decoder attention over the sentence's subword states plus budget-aware constraints
-  (a decode can never run out of length mid-type)
+  (decoder attention over sentence states, budget-aware constraints) lands at **93.82** —
+  attention is neutral-to-negative and 40% slower; three configs plateau at ~93.9, so the
+  remaining lever is the joint linking loss of Phase 2, not another blind tagger variant
 
 ## Phase 2 — full proofs
 
@@ -66,8 +67,10 @@ essentially its frame accuracy (96.31% of proofs are right given the frame) and 
 already exceeds theirs (63.0 dev vs their 56.88 test), so the linker is the open square:
 NPN had joint training with a weak tagger, SPINDLE a strong tagger without joint training.
 
-- [ ] Gold axiom links: unfold each type into its polarized atomic occurrences and extract
-  the per-sort matching from the bridge's terms
+- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-05 11:00 Gold axiom links: æthel's own
+  `mill.nets` already provides `proof_to_links` / `links_to_proof`; verified on a 50-sample
+  spread that links round-trip to the identical term — remains: full-corpus validation and
+  serialisation into the training data
 - [ ] Differentiable linker: bilinear scores over occurrence embeddings taken from the
   decoder's hidden states, Sinkhorn relaxation, joint loss `tagging + λ·linking` through the
   shared encoder, soft symbol distributions fed to the linker
