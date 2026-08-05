@@ -60,8 +60,19 @@ in git.
 
 ## Phase 2 — full proofs
 
-- [ ] Term construction from predicted types: Sinkhorn-style permutation linking versus discopy
-  proof search over `grammar.abstract` — measure both on dev
+USER's directive (2026-08-05, verbatim): "it should be possible to beat spindle at term
+accuracy with end-to-end differentiation of the parser". SPINDLE's term accuracy is
+essentially its frame accuracy (96.31% of proofs are right given the frame) and our frame
+already exceeds theirs (63.0 dev vs their 56.88 test), so the linker is the open square:
+NPN had joint training with a weak tagger, SPINDLE a strong tagger without joint training.
+
+- [ ] Gold axiom links: unfold each type into its polarized atomic occurrences and extract
+  the per-sort matching from the bridge's terms
+- [ ] Differentiable linker: bilinear scores over occurrence embeddings taken from the
+  decoder's hidden states, Sinkhorn relaxation, joint loss `tagging + λ·linking` through the
+  shared encoder, soft symbol distributions fed to the linker
+- [ ] Inference: Hungarian rounding, `mill` type-checker as validator, term equality up to
+  alpha/beta via discopy#442 `normal_form`
 - [ ] Exact-match term accuracy on test, up to alpha and beta via discopy#442 `normal_form`,
   against SPINDLE's 55.63 (`experiments/BASELINES.md`)
 - [ ] Report tables in `experiments/README.md`
