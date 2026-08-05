@@ -135,10 +135,12 @@ class Tagger(nn.Module):
 
     @torch.no_grad()
     def greedy(self, input_ids, attention_mask, phrase_ids, n_phrases: int,
-               max_length: int = 64):
+               max_length: int = 64, return_states: bool = False):
         """
         Greedy arity-constrained decoding: one well-formed type per phrase,
-        as a ``(P, max_length)`` tensor padded with ``vocab.pad``.
+        as a ``(P, max_length)`` tensor padded with ``vocab.pad``; with
+        ``return_states`` also the decoder state behind each emission, as a
+        ``(P, max_length, D)`` tensor for the linker to score.
         """
         pooled, keys, mask = self.phrase_states(
             input_ids, attention_mask, phrase_ids, n_phrases)
@@ -147,9 +149,10 @@ class Tagger(nn.Module):
         tokens = torch.full(
             (n_phrases, 1), self.vocab.bos, device=states.device)
         slots = torch.ones(n_phrases, dtype=torch.long, device=states.device)
-        result = []
+        result, emitted = [], []
         for step in range(max_length):
             outputs, states = self.gru(self.embedding(tokens), states)
+            emitted.append(outputs[:, -1])
             context = self.attend(outputs, keys, mask)
             logits = self.output(
                 torch.cat([outputs[:, -1], context[:, -1]], dim=-1))
@@ -166,4 +169,7 @@ class Tagger(nn.Module):
             result.append(tokens[:, 0])
         result = torch.stack(result, dim=1)
         mask = (result == self.vocab.eos).cumsum(dim=1) > 0
-        return result.masked_fill(mask, self.vocab.pad)
+        result = result.masked_fill(mask, self.vocab.pad)
+        if return_states:
+            return result, torch.stack(emitted, dim=1)
+        return result

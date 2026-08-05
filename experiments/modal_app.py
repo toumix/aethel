@@ -35,7 +35,7 @@ def setup() -> None:
     sys.path.insert(0, "/repo/experiments")
 
 
-@app.function(image=image, volumes={"/vol": volume}, timeout=1800)
+@app.function(image=image, volumes={"/vol": volume}, timeout=7200)
 def prepare(force: bool = False) -> None:
     """Extract the supertagging view of the dump onto the volume."""
     setup()
