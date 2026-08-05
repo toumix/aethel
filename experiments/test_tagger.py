@@ -63,9 +63,40 @@ def main(data_dir: str) -> None:
         prefix = vocab.decode(row.tolist())
         Type.parse_prefix(prefix)
 
+    from parser import GOAL, Parser, blocks, polarized_leaves
+
+    goal_prefix = "⟶ ◇obj1 NP ⟶ ◇su NP SMAIN"
+    assert [leaf[1:] for leaf in polarized_leaves(
+        goal_prefix.split(), True)]\
+        == [("NP", False), ("NP", False), ("SMAIN", True)]
+
+    rows = [{
+        "words": ["NP1", "NP2", "verb", GOAL],
+        "types": ["NP", "NP", goal_prefix, "SMAIN"],
+        "links": [[2, 0], [3, 1], [5, 4]]}]
+    link_blocks = blocks(rows, offsets=[0])
+    assert len(link_blocks) == 2
+
+    joint = Parser(RandomEncoder(), vocab)
+    seq = 9
+    input_ids = torch.randint(0, 100, (1, seq))
+    attention_mask = torch.ones(1, seq, dtype=torch.long)
+    phrase_ids = torch.tensor([[-1, 0, 1, 2, 2, 3, -1, -1, -1]])
+    targets = torch.full((4, 8), vocab.pad)
+    for i, prefix in enumerate(rows[0]["types"]):
+        encoded = vocab.encode(prefix)
+        targets[i, :len(encoded)] = torch.tensor(encoded)
+    tagging, linking = joint(
+        input_ids, attention_mask, phrase_ids, targets,
+        link_blocks=link_blocks)
+    (tagging + linking).backward()
+    assert tagging.isfinite() and linking.isfinite()
+
     print("test_tagger:", len(prefixes), "prefixes round-trip,",
           f"loss {loss.item():.3f} backpropagates,",
-          phrases, "greedy decodes parse as types")
+          phrases, "greedy decodes parse as types,",
+          f"joint losses {tagging.item():.3f}/{linking.item():.3f}",
+          "backpropagate")
 
 
 if __name__ == "__main__":

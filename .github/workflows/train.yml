@@ -19,6 +19,11 @@ on:
         default: '0'
       encoder_lr:
         default: '5e-5'
+      link_weight:
+        default: '0'
+      force_data:
+        type: boolean
+        default: false
       gpu:
         default: 'A100-40GB'
       smoke:
@@ -53,5 +58,7 @@ jobs:
           --warmup ${{ inputs.warmup }}
           --label-smoothing ${{ inputs.label_smoothing }}
           --encoder-lr ${{ inputs.encoder_lr }}
+          --link-weight ${{ inputs.link_weight }}
+          ${{ inputs.force_data && '--force-data' || '' }}
           ${{ inputs.smoke && '--smoke' || '' }}
           ${{ inputs.test && '--test' || '' }}

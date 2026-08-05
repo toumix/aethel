@@ -24,6 +24,7 @@ import torch
 from transformers import AutoModel, AutoTokenizer
 
 from data import BINS
+from parser import GOAL, Parser, blocks
 from tagger import Tagger, Vocabulary
 
 
@@ -38,6 +39,23 @@ def batches(rows: list[dict], size: int, shuffle: bool = False):
     if shuffle:
         random.shuffle(chunks)
     return chunks
+
+
+def with_goals(rows: list[dict], links: list[dict]) -> list[dict]:
+    """Append the goal type as a zero-size ``[GOAL]`` phrase to each row."""
+    by_name = {link["name"]: link for link in links}
+    result = []
+    for row in rows:
+        link = by_name.get(row["name"])
+        if link is None or link["goal"] is None:
+            result.append(row)
+            continue
+        result.append(row | {
+            "words": row["words"] + [GOAL],
+            "sizes": row["sizes"] + [0],
+            "types": row["types"] + [link["goal"]],
+            "links": link["links"]})
+    return result
 
 
 def tensorise(chunk, tokenizer, vocab, device):
@@ -64,7 +82,7 @@ def tensorise(chunk, tokenizer, vocab, device):
             targets[offsets[i] + j, :len(encoded)] = torch.tensor(encoded)
     return (encoding["input_ids"].to(device),
             encoding["attention_mask"].to(device),
-            phrase_ids.to(device), targets.to(device))
+            phrase_ids.to(device), targets.to(device), offsets)
 
 
 @torch.no_grad()
@@ -72,9 +90,9 @@ def evaluate(model, rows, tokenizer, vocab, train_counts, device,
              batch_size: int) -> dict:
     """Word-level accuracy overall, by frequency bin, and per frame."""
     model.eval()
-    correct, bins, frames = Counter(), Counter(), [0, 0]
+    correct, bins, frames, goals = Counter(), Counter(), [0, 0], [0, 0]
     for chunk in batches(rows, batch_size):
-        input_ids, attention_mask, phrase_ids, targets = tensorise(
+        input_ids, attention_mask, phrase_ids, targets, _ = tensorise(
             chunk, tokenizer, vocab, device)
         decoded = model.greedy(
             input_ids, attention_mask, phrase_ids, targets.shape[0],
@@ -83,9 +101,13 @@ def evaluate(model, rows, tokenizer, vocab, train_counts, device,
         offset = 0
         for row in chunk:
             frame = True
-            for prefix, size in zip(row["types"], row["sizes"]):
+            for word, prefix, size in zip(
+                    row["words"], row["types"], row["sizes"]):
                 hit = predictions[offset] == prefix
                 offset += 1
+                if word == GOAL:
+                    goals[0], goals[1] = goals[0] + hit, goals[1] + 1
+                    continue
                 frame = frame and hit
                 correct.update({"hit": size if hit else 0, "total": size})
                 count = train_counts[prefix]
@@ -99,6 +121,8 @@ def evaluate(model, rows, tokenizer, vocab, train_counts, device,
     result = {
         "accuracy": correct["hit"] / correct["total"],
         "frame": frames[0] / frames[1]}
+    if goals[1]:
+        result["goal"] = goals[0] / goals[1]
     for name, _, _ in BINS:
         if bins[f"{name}_total"]:
             result[name] = bins[f"{name}_hit"] / bins[f"{name}_total"]
@@ -119,6 +143,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--warmup", type=float, default=0.)
     parser.add_argument("--label-smoothing", type=float, default=0.)
+    parser.add_argument("--link-weight", type=float, default=0.)
+    parser.add_argument("--link-dim", type=int, default=128)
     parser.add_argument("--test", action="store_true")
     args = parser.parse_args()
 
@@ -131,15 +157,24 @@ def main() -> None:
     subsets = {
         subset: load(data_dir / f"{subset}.jsonl.gz")[:args.limit]
         for subset in ("train", "dev", "test")}
+    if args.link_weight:
+        subsets = {
+            subset: with_goals(
+                rows, load(data_dir / f"links-{subset}.jsonl.gz"))
+            for subset, rows in subsets.items()}
     train_counts = Counter()
     for row in subsets["train"]:
         for prefix, size in zip(row["types"], row["sizes"]):
             train_counts[prefix] += size
     vocab = Vocabulary(json.loads((data_dir / "symbols.json").read_text()))
     tokenizer = AutoTokenizer.from_pretrained(args.encoder)
-    model = Tagger(
-        AutoModel.from_pretrained(args.encoder), vocab,
-        label_smoothing=args.label_smoothing).to(device)
+    model = (
+        Parser(
+            AutoModel.from_pretrained(args.encoder), vocab,
+            label_smoothing=args.label_smoothing, link_dim=args.link_dim)
+        if args.link_weight else Tagger(
+            AutoModel.from_pretrained(args.encoder), vocab,
+            label_smoothing=args.label_smoothing)).to(device)
     optimizer = torch.optim.AdamW([
         {"params": model.encoder.parameters(), "lr": args.encoder_lr},
         {"params": [
@@ -155,10 +190,19 @@ def main() -> None:
     best, log = 0., out_dir / "metrics.jsonl"
     for epoch in range(args.epochs):
         model.train()
-        total_loss, n = 0., 0
+        total_loss, total_link, n = 0., 0., 0
         for chunk in batches(subsets["train"], args.batch_size, shuffle=True):
             optimizer.zero_grad()
-            loss = model(*tensorise(chunk, tokenizer, vocab, device))
+            input_ids, attention_mask, phrase_ids, targets, offsets =\
+                tensorise(chunk, tokenizer, vocab, device)
+            if args.link_weight:
+                tagging, linking = model(
+                    input_ids, attention_mask, phrase_ids, targets,
+                    link_blocks=blocks(chunk, offsets))
+                loss = tagging + args.link_weight * linking
+                total_link += linking.item()
+            else:
+                loss = model(input_ids, attention_mask, phrase_ids, targets)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
             optimizer.step()
@@ -168,6 +212,8 @@ def main() -> None:
             model, subsets["dev"], tokenizer, vocab, train_counts, device,
             args.batch_size)
         metrics |= {"epoch": epoch, "loss": total_loss / max(n, 1)}
+        if args.link_weight:
+            metrics |= {"link_loss": total_link / max(n, 1)}
         print(json.dumps(metrics))
         with open(log, "a") as file:
             file.write(json.dumps(metrics) + "\n")
