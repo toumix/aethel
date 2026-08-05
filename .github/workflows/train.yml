@@ -32,6 +32,11 @@ on:
       test:
         type: boolean
         default: false
+      evaluate:
+        type: boolean
+        default: false
+      subset:
+        default: 'dev'
 
 jobs:
   train:
@@ -59,6 +64,8 @@ jobs:
           --label-smoothing ${{ inputs.label_smoothing }}
           --encoder-lr ${{ inputs.encoder_lr }}
           --link-weight ${{ inputs.link_weight }}
+          --subset ${{ inputs.subset }}
           ${{ inputs.force_data && '--force-data' || '' }}
           ${{ inputs.smoke && '--smoke' || '' }}
           ${{ inputs.test && '--test' || '' }}
+          ${{ inputs.evaluate && '--evaluate' || '' }}

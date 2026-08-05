@@ -24,7 +24,7 @@ app = modal.App("aethel-supertagging")
 volume = modal.Volume.from_name("aethel-tagging", create_if_missing=True)
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .pip_install("torch", "transformers")
+    .pip_install("torch", "transformers", "scipy")
     .add_local_dir(
         pathlib.Path(__file__).parent.parent, remote_path="/repo"))
 
@@ -65,13 +65,33 @@ def train(arguments: list[str]) -> str:
     return (pathlib.Path(out) / "metrics.jsonl").read_text()
 
 
+@app.function(image=image, volumes={"/vol": volume}, gpu=GPU, timeout=21600)
+def parse(arguments: list[str]) -> None:
+    """Run ``evaluate.py`` against a checkpoint on the volume."""
+    setup()
+    with zipfile.ZipFile("/repo/data/aethel_1.0.0a5.zip") as archive:
+        archive.extractall("/tmp/dump")
+    import evaluate as script
+    sys.argv = [
+        "evaluate.py", "--data", "/vol/tagging",
+        "--dump", "/tmp/dump/aethel_1.0.0a5.pickle", *arguments]
+    script.main()
+
+
 @app.local_entrypoint()
 def main(epochs: int = 5, encoder: str = "DTAI-KULeuven/robbert-2023-dutch-base",
          batch_size: int = 32, run_name: str = "run", limit: int = 0,
          warmup: float = 0., label_smoothing: float = 0.,
          encoder_lr: float = 5e-5, link_weight: float = 0.,
          test: bool = False, smoke: bool = False,
-         force_data: bool = False):
+         force_data: bool = False, evaluate: bool = False,
+         subset: str = "dev"):
+    if evaluate:
+        parse.remote([
+            "--checkpoint", f"/vol/runs/{run_name}/best.pt",
+            "--encoder", encoder, "--subset", subset,
+            "--batch-size", str(batch_size)])
+        return
     prepare.remote(force=force_data)
     arguments = [
         "--out", f"/vol/runs/{run_name}", "--encoder", encoder,
