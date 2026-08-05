@@ -52,8 +52,11 @@ in git.
   warmup 0.1, ls 0.1) jumps to **93.05 dev** (frame 58.71, rare 52.66, unseen 13.97) —
   1.03 from the bar. `large-2` (large, 1e-5, warmup 0.1, ls 0.1, 15 epochs) reaches
   **93.73 dev** (frame 61.08, uncommon 73.35, rare 55.14, unseen 16.19), 0.35 from the
-  bar and still climbing at the last epoch; `large-3`/`large-4` (25 epochs, 2e-5 vs 1e-5)
-  in flight; decoder attention over sentence context is the next structural lever
+  bar and still climbing at the last epoch; `large-3`/`large-4` (25 epochs, 2e-5 vs
+  1e-5) both plateau at **93.90 dev** — LR indifferent, pure training flattened, but rare
+  59.11 and unseen 20.32 now beat the published tagger's bins (58.15 / 18.37). `large-5`
+  adds decoder attention over the sentence's subword states plus budget-aware constraints
+  (a decode can never run out of length mid-type)
 
 ## Phase 2 — full proofs
 

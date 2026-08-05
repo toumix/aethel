@@ -64,7 +64,8 @@ class Tagger(nn.Module):
         self.embedding = nn.Embedding(
             len(vocab), embedding_dim, padding_idx=vocab.pad)
         self.gru = nn.GRU(embedding_dim, hidden, batch_first=True)
-        self.output = nn.Linear(hidden, len(vocab))
+        self.query = nn.Linear(hidden, hidden)
+        self.output = nn.Linear(2 * hidden, len(vocab))
 
     def phrase_states(self, input_ids, attention_mask, phrase_ids,
                       n_phrases: int):
@@ -90,20 +91,43 @@ class Tagger(nn.Module):
         count = torch.zeros(
             n_phrases, device=flat.device, dtype=flat.dtype).index_add_(
             0, ids, torch.ones_like(ids, dtype=flat.dtype))
-        return total / count.clamp(min=1).unsqueeze(-1)
+        pooled = total / count.clamp(min=1).unsqueeze(-1)
+        rows = torch.zeros(
+            n_phrases, dtype=torch.long, device=states.device).index_put_(
+            (ids,), torch.arange(
+                states.shape[0], device=states.device).unsqueeze(1).expand(
+                phrase_ids.shape).flatten()[keep])
+        return pooled, states[rows], attention_mask[rows]
+
+    def attend(self, queries, keys, mask):
+        """
+        Single-head attention of the decoder states over the sentence's
+        subword states, one sentence per phrase.
+
+        Parameters:
+            queries : Decoder states of shape ``(P, L, D)``.
+            keys : Encoder states of the phrase's sentence, ``(P, S, D)``.
+            mask : The sentence's attention mask, ``(P, S)``.
+        """
+        scores = torch.einsum(
+            "pld,psd->pls", self.query(queries), keys)\
+            / keys.shape[-1] ** .5
+        scores = scores.masked_fill(mask[:, None] == 0, -torch.inf)
+        return torch.einsum("pls,psd->pld", scores.softmax(-1), keys)
 
     def forward(self, input_ids, attention_mask, phrase_ids, targets):
         """
         The teacher-forced cross-entropy loss on a batch of targets of
         shape ``(P, L)``, padded with ``vocab.pad``.
         """
-        states = self.phrase_states(
+        pooled, keys, mask = self.phrase_states(
             input_ids, attention_mask, phrase_ids, targets.shape[0])
         bos = torch.full(
             (targets.shape[0], 1), self.vocab.bos, device=targets.device)
         inputs = torch.cat([bos, targets[:, :-1]], dim=1)
-        outputs, _ = self.gru(self.embedding(inputs), states[None])
-        logits = self.output(outputs)
+        outputs, _ = self.gru(self.embedding(inputs), pooled[None])
+        context = self.attend(outputs, keys, mask)
+        logits = self.output(torch.cat([outputs, context], dim=-1))
         return nn.functional.cross_entropy(
             logits.flatten(0, 1), targets.flatten(),
             ignore_index=self.vocab.pad,
@@ -116,17 +140,22 @@ class Tagger(nn.Module):
         Greedy arity-constrained decoding: one well-formed type per phrase,
         as a ``(P, max_length)`` tensor padded with ``vocab.pad``.
         """
-        states = self.phrase_states(
-            input_ids, attention_mask, phrase_ids, n_phrases)[None]
+        pooled, keys, mask = self.phrase_states(
+            input_ids, attention_mask, phrase_ids, n_phrases)
+        states = pooled[None]
         arities = self.vocab.arities.to(states.device)
         tokens = torch.full(
             (n_phrases, 1), self.vocab.bos, device=states.device)
         slots = torch.ones(n_phrases, dtype=torch.long, device=states.device)
         result = []
-        for _ in range(max_length):
+        for step in range(max_length):
             outputs, states = self.gru(self.embedding(tokens), states)
-            logits = self.output(outputs[:, -1])
+            context = self.attend(outputs, keys, mask)
+            logits = self.output(
+                torch.cat([outputs[:, -1], context[:, -1]], dim=-1))
             logits[:, self.vocab.pad] = logits[:, self.vocab.bos] = -torch.inf
+            remaining = max_length - step - 1
+            logits[arities[None] > remaining - slots[:, None] + 1] = -torch.inf
             done = slots == 0
             logits[done] = -torch.inf
             logits[done, self.vocab.eos] = 0.
