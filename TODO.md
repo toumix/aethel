@@ -67,13 +67,15 @@ essentially its frame accuracy (96.31% of proofs are right given the frame) and 
 already exceeds theirs (63.0 dev vs their 56.88 test), so the linker is the open square:
 NPN had joint training with a weak tagger, SPINDLE a strong tagger without joint training.
 
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-05 11:00 Gold axiom links: æthel's own
-  `mill.nets` already provides `proof_to_links` / `links_to_proof`; verified on a 50-sample
-  spread that links round-trip to the identical term — remains: full-corpus validation and
-  serialisation into the training data
-- [ ] Differentiable linker: bilinear scores over occurrence embeddings taken from the
-  decoder's hidden states, Sinkhorn relaxation, joint loss `tagging + λ·linking` through the
-  shared encoder, soft symbol distributions fed to the linker
+- [x] Gold axiom links (`experiments/links.py`): æthel's own `mill.nets` provides
+  `proof_to_links` / `links_to_proof`; **all 68,763 samples extract and round-trip to the
+  identical term, zero skips**, ~100k unused phrases (punctuation) renumbered around and
+  left unlinked
+- [x] Differentiable linker (`experiments/parser.py`): bilinear scores over the decoder's
+  hidden states at atom emissions, log-domain Sinkhorn per sort block, joint loss
+  `tagging + λ·linking` through the shared encoder, goal type decoded from a `[GOAL]`
+  position; CPU smoke green, `joint-1` (large, 25 epochs, λ=1) dispatched
+  (soft symbol distributions into the linker: deferred, gold-forced states first)
 - [ ] Inference: snap the Sinkhorn matrix to the best discrete permutation with the
   Hungarian algorithm (exact assignment, not per-row argmax), `mill` type-checker as
   validator, term equality up to alpha/beta via discopy#442 `normal_form`
