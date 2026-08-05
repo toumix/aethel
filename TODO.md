@@ -71,8 +71,9 @@ NPN had joint training with a weak tagger, SPINDLE a strong tagger without joint
 - [ ] Differentiable linker: bilinear scores over occurrence embeddings taken from the
   decoder's hidden states, Sinkhorn relaxation, joint loss `tagging + λ·linking` through the
   shared encoder, soft symbol distributions fed to the linker
-- [ ] Inference: Hungarian rounding, `mill` type-checker as validator, term equality up to
-  alpha/beta via discopy#442 `normal_form`
+- [ ] Inference: snap the Sinkhorn matrix to the best discrete permutation with the
+  Hungarian algorithm (exact assignment, not per-row argmax), `mill` type-checker as
+  validator, term equality up to alpha/beta via discopy#442 `normal_form`
 - [ ] Exact-match term accuracy on test, up to alpha and beta via discopy#442 `normal_form`,
   against SPINDLE's 55.63 (`experiments/BASELINES.md`)
 - [ ] Report tables in `experiments/README.md`
