@@ -1,0 +1,71 @@
+name: train
+on:
+  push:
+    branches: [claude/acg-aethel-scaling-c1kdob]
+    paths: ['.github/workflows/train.yml']
+  workflow_dispatch:
+    inputs:
+      epochs:
+        default: '5'
+      encoder:
+        default: 'DTAI-KULeuven/robbert-2023-dutch-base'
+      batch_size:
+        default: '32'
+      run_name:
+        default: 'run'
+      warmup:
+        default: '0'
+      label_smoothing:
+        default: '0'
+      encoder_lr:
+        default: '5e-5'
+      link_weight:
+        default: '0'
+      force_data:
+        type: boolean
+        default: false
+      gpu:
+        default: 'A100-40GB'
+      smoke:
+        type: boolean
+        default: false
+      test:
+        type: boolean
+        default: false
+      evaluate:
+        type: boolean
+        default: false
+      subset:
+        default: 'dev'
+
+jobs:
+  train:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install modal
+      - name: Train on Modal
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_GPU: ${{ inputs.gpu }}
+        run: >
+          modal run experiments/modal_app.py
+          --epochs ${{ inputs.epochs }}
+          --encoder ${{ inputs.encoder }}
+          --batch-size ${{ inputs.batch_size }}
+          --run-name ${{ inputs.run_name }}
+          --warmup ${{ inputs.warmup }}
+          --label-smoothing ${{ inputs.label_smoothing }}
+          --encoder-lr ${{ inputs.encoder_lr }}
+          --link-weight ${{ inputs.link_weight }}
+          --subset ${{ inputs.subset }}
+          ${{ inputs.force_data && '--force-data' || '' }}
+          ${{ inputs.smoke && '--smoke' || '' }}
+          ${{ inputs.test && '--test' || '' }}
+          ${{ inputs.evaluate && '--evaluate' || '' }}
