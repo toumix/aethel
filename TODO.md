@@ -43,7 +43,7 @@ in git.
 - [x] `experiments/modal_app.py`: GPU training on Modal with checkpoints on the
   `aethel-tagging` volume, launched by the `train` workflow — smoke run green end to end
   (run 30921567607: data prep on volume, RobBERT download, train, constrained dev eval)
-- [WIP] @session_01Dq7SZNmkPKGFAuTPvTnpFJ-2026-08-04 15:50 Sweep on dev, report test
+- [ ] Sweep on dev, report test
   accuracy against the 94.08 bar — `base-1` (RobBERT-base, 5 epochs, 12 GPU-min,
   run 30922220062) reaches **91.58 dev** (frame 50.46, unseen 5.40), not converged;
   `large-1` (RobBERT-large, 15 epochs, constant 5e-5, no warmup) **collapsed** — 12.19 dev
@@ -57,7 +57,8 @@ in git.
   59.11 and unseen 20.32 now beat the published tagger's bins (58.15 / 18.37). `large-5`
   (decoder attention over sentence states, budget-aware constraints) lands at **93.82** —
   attention is neutral-to-negative and 40% slower; three configs plateau at ~93.9, so the
-  remaining lever is the joint linking loss of Phase 2, not another blind tagger variant
+  remaining lever is the joint linking loss of Phase 2, not another blind tagger variant.
+  **Paused by USER 2026-08-05** with the claim released — resume from here
 
 ## Phase 2 — full proofs
 
@@ -74,11 +75,15 @@ NPN had joint training with a weak tagger, SPINDLE a strong tagger without joint
 - [x] Differentiable linker (`experiments/parser.py`): bilinear scores over the decoder's
   hidden states at atom emissions, log-domain Sinkhorn per sort block, joint loss
   `tagging + λ·linking` through the shared encoder, goal type decoded from a `[GOAL]`
-  position; CPU smoke green, `joint-1` (large, 25 epochs, λ=1) dispatched
+  position; CPU smoke green. `joint-1` (large, λ=1) was cancelled at the workflow's
+  355-minute cap after epoch 10/20 — joint epochs cost ~31 min (the per-block Sinkhorn
+  Python loop; vectorise before rerunning, and commit the volume per epoch so a cancelled
+  run keeps its checkpoint). Partial curve at epoch 10: 93.06 tagging (tracking the plain
+  run), link loss 0.361→0.005, goal type 98.0%.
   (soft symbol distributions into the linker: deferred, gold-forced states first)
-- [ ] Inference: snap the Sinkhorn matrix to the best discrete permutation with the
-  Hungarian algorithm (exact assignment, not per-row argmax), `mill` type-checker as
-  validator, term equality up to alpha/beta via discopy#442 `normal_form`
+- [ ] Inference: `experiments/evaluate.py` is written and dispatchable (workflow
+  `evaluate: true`) — Hungarian exact assignment per sort block, `links_to_proof`,
+  strict term match; never yet run, blocked on a surviving trained checkpoint
 - [ ] Exact-match term accuracy on test, up to alpha and beta via discopy#442 `normal_form`,
   against SPINDLE's 55.63 (`experiments/BASELINES.md`)
 - [ ] Report tables in `experiments/README.md`
